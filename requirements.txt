@@ -1,0 +1,13 @@
+# AegisCloud — runtime dependencies
+flask>=3.0
+werkzeug>=3.1,<4  # partitioned cookies for embedded previews
+numpy>=2.0,<3
+pandas>=2.2.2,<3
+scikit-learn==1.6.1
+joblib>=1.3
+cryptography>=42.0
+segno>=1.6          # QR codes for TOTP enrolment (pure python, SVG output)
+pytest>=8.0          # project test suite
+
+# optional – only needed for the deep-learning comparison notebook
+# tensorflow>=2.15

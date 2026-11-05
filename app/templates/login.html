@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AegisCloud — Zero-Trust Access Console</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2322d3ee'/><path d='M50 22l22 9v20c0 15-10 25-22 29-12-4-22-14-22-29V31z' fill='%23050a14'/></svg>">
+</head>
+<body>
+<div class="auth-wrap">
+  <!-- ============ brand panel ============ -->
+  <aside class="auth-brand">
+    <div>
+      <div class="brand-logo"><div class="logo-mark">A</div> AegisCloud</div>
+      <h1>Zero-trust ideas,<br><em>scored session by session.</em></h1>
+      <p class="lead">An educational security workspace for simulated cloud sessions: multi-factor
+        authentication, authenticated encryption and a machine-learning risk engine that
+        suggests <b>allow</b>, <b>step-up</b>, <b>review</b> or <b>block</b> for simulated sessions.</p>
+      <div class="feat-list">
+        <div class="feat"><div class="dot">1</div><div><b>TOTP + recovery codes</b> — RFC 6238 second factor, single-use backup codes, trusted-device memory.</div></div>
+        <div class="feat"><div class="dot">2</div><div><b>ML risk engine</b> — estimated P(success) fused with behavioural rules; every score is explained, additively.</div></div>
+        <div class="feat"><div class="dot">3</div><div><b>AES-256-GCM vault</b> — envelope encryption, per-file data keys, tamper detection, expiring share links.</div></div>
+        <div class="feat"><div class="dot">4</div><div><b>Shamir's Secret Sharing</b> over GF(2⁸) — k-of-n secret sharing demonstration.</div></div>
+        <div class="feat"><div class="dot">5</div><div><b>Drift insights &amp; retraining</b> — PSI comparison plus manual model retraining and promotion.</div></div>
+      </div>
+    </div>
+    <div class="tiny">A SECURITY DEMONSTRATION &nbsp;·&nbsp; SYNTHETIC DATA &nbsp;·&nbsp; NOT FOR PRODUCTION</div>
+  </aside>
+
+  <!-- ============ auth panel ============ -->
+  <main class="auth-side">
+    <div class="auth-card">
+      <div class="tabs" id="tabs">
+        <button class="on" data-tab="login">Sign in</button>
+        <button data-tab="register">Create account</button>
+      </div>
+
+      <!-- login -->
+      <div class="card" id="pane-login">
+        <h3 style="font-size:19px">Welcome back</h3>
+        <p class="muted" style="margin:4px 0 18px">Step 1 of 2 — password. A second factor follows.</p>
+        <form id="login-form">
+          <label class="field"><span>Username</span>
+            <input class="input" name="username" id="li-user" autocomplete="username" placeholder="admin" required>
+          </label>
+          <label class="field"><span>Password</span>
+            <input class="input" name="password" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••••" required>
+          </label>
+          <label style="display:flex;gap:9px;align-items:center;font-size:12.5px;color:var(--ink-2);margin-bottom:16px">
+            <input type="checkbox" id="li-trust" style="accent-color:#22d3ee"> Remember this device as trusted
+          </label>
+          <button class="btn primary" style="width:100%" id="li-submit">Continue</button>
+          <div class="err" id="li-err"></div>
+        </form>
+        <hr class="sep">
+        <div class="tiny">Demo accounts &nbsp;·&nbsp; <b class="mono-sm">admin / Admin@Aegis2026</b>
+          &nbsp;·&nbsp; <b class="mono-sm">analyst / Analyst@Aegis2026</b><br>
+          A one-time code is generated server-side and surfaced below the form (no mail server in this demo build).</div>
+      </div>
+
+      <!-- mfa -->
+      <div class="card" id="pane-mfa" style="display:none">
+        <h3 style="font-size:19px">Second factor</h3>
+        <p class="muted" id="mfa-sub" style="margin:4px 0 14px"></p>
+        <div class="otp-inputs" id="otp-boxes">
+          <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+        </div>
+        <div id="demo-code-slot"></div>
+        <button class="btn primary" style="width:100%;margin-top:14px" id="mfa-submit">Verify &amp; sign in</button>
+        <button class="btn ghost sm" style="width:100%;margin-top:8px" id="mfa-recovery">Use a recovery code instead</button>
+        <div class="err" id="mfa-err"></div>
+        <div class="tiny" style="margin-top:14px">Informational login risk (not enforced):
+          <span id="pre-risk" class="mono-sm">—</span></div>
+      </div>
+
+      <!-- register -->
+      <div class="card" id="pane-register" style="display:none">
+        <h3 style="font-size:19px">Create account</h3>
+        <p class="muted" style="margin:4px 0 18px">The password policy engine scores strength live.</p>
+        <label class="field"><span>Username</span><input class="input" id="rg-user" autocomplete="off"></label>
+        <label class="field"><span>Email</span><input class="input" id="rg-email" type="email" autocomplete="off"></label>
+        <label class="field"><span>Password</span><input class="input" id="rg-pass" type="password" autocomplete="new-password"></label>
+        <div class="meter"><i id="rg-meter"></i></div>
+        <div class="checks" id="rg-checks"></div>
+        <button class="btn primary" style="width:100%;margin-top:16px" id="rg-submit">Create account</button>
+        <div class="err" id="rg-err"></div>
+      </div>
+
+      <div class="tiny" style="text-align:center;margin-top:16px">
+        Model <span class="mono-sm">{{ model.version or 'not trained' }}</span> ·
+        {{ model.champion or '—' }} ·
+        synthetic holdout acc <span class="mono-sm">{{ ((model.test_metrics or {}).get('accuracy') or 0) * 100 }}%</span>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let challenge = null, mfaMode = 'email';
+
+function toast(msg, kind='ok'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>el.remove(), 4200);
+}
+async function post(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+                              body: JSON.stringify(body||{})});
+  return [r.status, await r.json().catch(()=>({}))];
+}
+function showErr(sel, msg){ const e=$(sel); e.textContent=msg; e.style.display= msg?'block':'none'; }
+
+/* tabs */
+$$('#tabs button').forEach(b => b.onclick = () => {
+  $$('#tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  $('#pane-login').style.display = b.dataset.tab==='login' ? '' : 'none';
+  $('#pane-register').style.display = b.dataset.tab==='register' ? '' : 'none';
+  if(b.dataset.tab==='login'){ $('#pane-mfa').style.display='none'; }
+});
+
+/* login */
+$('#login-form').onsubmit = async (ev) => {
+  ev.preventDefault();
+  showErr('#li-err','');
+  const btn = $('#li-submit'); btn.disabled = true; btn.textContent = 'Checking…';
+  const [status, data] = await post('/api/auth/login', {
+    username: $('#li-user').value.trim(), password: $('#li-pass').value,
+    device_fp: localStorage.getItem('aegis_dev') || '',
+    hour: new Date().getHours(), trust: $('#li-trust').checked
+  });
+  btn.disabled = false; btn.textContent = 'Continue';
+  if(!data.success){ showErr('#li-err', data.error || 'Login failed'); return; }
+  if(data.mfa_required){ startMfa(data); return; }
+  location.href = '/console';
+};
+
+function startMfa(data){
+  challenge = data.challenge; mfaMode = data.mfa_required;
+  $('#pane-login').style.display = 'none';
+  $('#pane-mfa').style.display = '';
+  $('#mfa-sub').textContent = mfaMode === 'totp'
+    ? 'Enter the 6-digit code from your authenticator app.'
+    : 'A one-time code was generated for this sign-in.';
+  const risk = data.pre_risk || {};
+  const p = $('#pre-risk');
+  p.textContent = `${risk.risk_score ?? '—'}/100 · ${risk.decision || ''}`;
+  p.style.color = risk.decision === 'allow' ? '#7ff0c3' : risk.decision === 'stepup' ? '#ffdf8a' : '#ffb0bf';
+  if(data.demo_otp){
+    $('#demo-code-slot').innerHTML =
+      `<div class="demo-code"><div>Demo one-time code<br><span class="tiny">shown only because AEGIS_DEMO=1</span></div>
+        <b>${data.demo_otp}</b>
+        <button class="btn sm" id="fill-otp">Fill</button></div>`;
+    $('#fill-otp').onclick = () => {
+      const digits = data.demo_otp.split('');
+      $$('#otp-boxes input').forEach((inp,i)=>{ inp.value = digits[i]||''; });
+      $('#otp-boxes input')[5].focus();
+    };
+  } else { $('#demo-code-slot').innerHTML = ''; }
+  const boxes = $$('#otp-boxes input');
+  boxes.forEach((inp,i) => {
+    inp.oninput = () => { inp.value = inp.value.replace(/\D/g,''); if(inp.value && i<5) boxes[i+1].focus(); };
+    inp.onkeydown = (e) => { if(e.key==='Backspace' && !inp.value && i>0) boxes[i-1].focus(); };
+  });
+  boxes[0].focus();
+}
+
+async function submitMfa(recovery=false){
+  const code = recovery ? prompt('Enter one of your recovery codes:')||''
+                        : $$('#otp-boxes input').map(i=>i.value).join('');
+  if(!code) return;
+  showErr('#mfa-err','');
+  const [status, data] = await post('/api/auth/mfa', {challenge, code, recovery,
+    trust_device: $('#li-trust').checked});
+  if(!data.success){ showErr('#mfa-err', data.error || 'Invalid code'); return; }
+  location.href = '/console';
+}
+$('#mfa-submit').onclick = () => submitMfa(false);
+$('#mfa-recovery').onclick = () => submitMfa(true);
+
+/* register + live password policy */
+let pwTimer = null;
+$('#rg-pass').oninput = () => {
+  clearTimeout(pwTimer);
+  pwTimer = setTimeout(async () => {
+    const pw = $('#rg-pass').value;
+    const [, rep] = await post('/api/auth/password-check', {password: pw});
+    $('#rg-meter').style.width = (rep.score/rep.max_score*100) + '%';
+    $('#rg-meter').style.background = rep.ok ? 'linear-gradient(90deg,#34d399,#22d3ee)'
+                                             : 'linear-gradient(90deg,#f43f5e,#fbbf24)';
+    const names = {length:'10+ chars', upper:'Uppercase', lower:'Lowercase', digit:'Number',
+                   symbol:'Symbol', not_common:'Not common', no_sequence:'No sequence'};
+    $('#rg-checks').innerHTML = Object.entries(rep.checks)
+      .map(([k,v])=>`<span class="${v?'ok':'no'}">${v?'✓':'✗'} ${names[k]||k}</span>`).join('');
+  }, 140);
+};
+
+$('#rg-submit').onclick = async () => {
+  showErr('#rg-err','');
+  const [status, data] = await post('/api/auth/register', {
+    username: $('#rg-user').value.trim(), email: $('#rg-email').value.trim(),
+    password: $('#rg-pass').value });
+  if(!data.success){ showErr('#rg-err', data.error || 'Registration failed'); return; }
+  toast('Account created — sign in with your new credentials');
+  $('#li-user').value = $('#rg-user').value.trim();
+  $$('#tabs button')[0].click();
+  $('#li-pass').focus();
+};
+
+/* already signed in? */
+fetch('/api/auth/me').then(r=>{ if(r.ok) location.href = '/console'; }).catch(()=>{});
+</script>
+</body>
+</html>

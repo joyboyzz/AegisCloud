@@ -1,0 +1,7 @@
+instance/
+__pycache__/
+.pytest_cache/
+*.pyc
+.git/
+.venv/
+artifacts/models/
