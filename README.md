@@ -124,6 +124,21 @@ writes, training-only baselines, risk explanations and instance isolation.
 - For real deployments use secure OTP delivery, HTTPS, managed secrets and keys,
   real telemetry, access-control integration, independent testing and review.
 
+## Rebuild the visual assets
+
+```bash
+python -m pip install -r requirements-dev.txt
+python scripts/make_deck.py
+python scripts/make_report.py
+python scripts/make_media.py
+```
+
+To retake screenshots, install Chromium with `python -m playwright install
+chromium`, start a **separate, fictional demo instance**, and run
+`python scripts/shoot.py`. The script logs in, replays sessions and performs a
+vault tamper demonstration; do not point it at personal or production data.
+Your operating system may require additional Playwright browser libraries.
+
 ## Repository map
 
 ```text
